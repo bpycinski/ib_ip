@@ -134,7 +134,6 @@ public class Serwer implements Runnable {
             }
             catch (IOException e){
                 System.out.print("Nie udało się połączyć z klientem. Zamykam połączenie");
-                //TODO posprzątać
                 return;
             }
             try
@@ -233,7 +232,7 @@ public class Serwer implements Runnable {
                     komunikat = komenda[1];
                 } catch (RuntimeException e) {
                     Wyslij ("Za malo parametrow");
-                    cleanAndQuit();
+                    //cleanAndQuit();
                     return;
                 }
                 
@@ -252,7 +251,7 @@ public class Serwer implements Runnable {
                     }
                 }  catch (RuntimeException e) {
                     Wyslij ("Podany uzytkownik sie jeszcze nie zalogowal!");
-                    cleanAndQuit();
+                    //cleanAndQuit();
                     return;
                 }
 
