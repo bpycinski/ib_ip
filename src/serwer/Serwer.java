@@ -215,11 +215,14 @@ public class Serwer implements Runnable {
                     return;
                 }
                 klientLogin = parametryPolecenia;
-                //Dodaj do slownika klientow nowego klienta
-                //TODO zabezpieczyć, żeby nie dało się zalogować
-                //z takim samym loginem, sprawdzić, co się stanie 
-                //obecnie
-                klienci.put( klientLogin, new KlientInfo(this) );
+                if (! klienci.containsKey(klientLogin))
+                    klienci.put( klientLogin, new KlientInfo(this) );
+                else {
+                    Wyslij ("Podany login juz jest zajety!");
+                    try {
+                        gniazdoPolaczenia.close();
+                    } catch (IOException ex) { }
+                }
                 
             } else if (polecenie.equals("SEND")) {     
                 //dzieli na login odbiorcy i komunikat
@@ -324,7 +327,16 @@ public class Serwer implements Runnable {
                 klienci.get(klientLogin).autoReceive = 
                         ((czesciWiadomosci[1].equals("TRUE") || czesciWiadomosci[1].equals("ON")) 
                         ? true : false );
-            
+            } else if (polecenie.equals("LISTCLIENTS")) {
+                String answer = "";
+                //iteruj po wszystkich loginach
+                for (String client: klienci.keySet()) {
+                    answer += client;
+                    answer += ";";
+                }
+                //usuń znak ';' konczący wiadomość
+                answer = answer.substring(0, answer.length()-1);
+                Wyslij(answer);
             } else if (polecenie.equals("EXIT")) {         
                 //zakoncz, pozamykaj co sie da
                 cleanAndQuit();

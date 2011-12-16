@@ -17,7 +17,7 @@ public class Main {
         // zajmie się wykonywaniem wątku serwera; pojedynczego
         Executor watekSerwera = Executors.newSingleThreadExecutor();
 
-        int port = 10103;
+        int port = 10105;
         if (args.length > 0)
             port = Integer.parseInt(args[0]);
 
