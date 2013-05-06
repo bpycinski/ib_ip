@@ -5,7 +5,16 @@ import java.util.concurrent.*;
 
 /**
  *
- * @author jk
+ * @author bp
+ * 
+ * Znane błędy lub istotne rzeczy:
+ * 
+ * Jeśli nie zalogowano się, możliwe jest wpisywanie innych poleceń, ale zachowanie jest niepoprawne
+ * Ustawienie AUTORECEIVE ON nie pobiera od razu oczekujących wiadomości, trzeba je ręcznie wyświetlić
+ * Polecenia należy wpisywać WIELKIMI LITERAMI
+ * Serwer akceptuje "przelogowanie" w trakcie trwania sesji
+ * Brakuje komunikatów diagnostycznych po stronie serwera
+ * 
  */
 public class Main {
 

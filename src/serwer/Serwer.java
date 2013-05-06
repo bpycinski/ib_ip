@@ -27,10 +27,11 @@ public class Serwer implements Runnable {
     private class KlientInfo {
         /** 
          * Kolejka oczekujących komunikatów, jej elementami sa pary 
-         * < loginNadawcy, komunikat> zaimplementowane jako słowniki (java.util.Map),
-         * kazdy taki słownik ma tylko 1 element
+         * < loginNadawcy, komunikat> zaimplementowane jako obiekty klasy 
+         * pomocniczej Pair
+         * @note W poprzedniej wersji zaimplementowano elementy kolejki jednoelementowymi slownikami
          */
-        Queue < Map <String, String> > messageQueue = new LinkedList<Map<String, String>>();
+        Queue < Pair <String, String> > messageQueue = new LinkedList<Pair<String, String>>();
         /** Czy automatycznie odbierać komunikaty po wysłaniu */
         Boolean autoReceive = false;
         /** referencja dająca dostęp do strumieni I/O klienta */
@@ -178,8 +179,8 @@ public class Serwer implements Runnable {
          */
         private void parsujPolecenie(String wiadomosc) {
             /** Zmienna pomocnicza do operacji na komunikatach, 
-             * zawiera pary < Login, wiadomosc>        */
-            HashMap<String, String> map;
+             * zawiera parę < Login, wiadomosc>        */
+            Pair<String, String> tmpMessage;
             /** login ewentualnego odbiorcy komunikatu (Dla SEND, GET) */
             String otherLogin ;
             //dzieli na komende i reszte polecenia
@@ -198,14 +199,11 @@ public class Serwer implements Runnable {
             String polecenie = czesciWiadomosci[0];
             /** Ewentualna dalsza czesc komunikatu od klienta */
             String parametryPolecenia = null;
-            // Konieczne sprawdzenie, bo moze rzucic wyjatkiem Runtime gdyby
-            // tablica miala tylko  element
-            try {
+            // Konieczne sprawdzenie dlugosci, bo moze rzucic wyjatkiem Runtime gdyby
+            // tablica miala tylko zerowy element
+            if (czesciWiadomosci.length == 2)
                 parametryPolecenia = czesciWiadomosci[1];
-            }
-            catch (RuntimeException e) {
-                //nic nie rob
-            }
+            
             if (polecenie.equals("LOGIN")) {       
                 // Sprawdz czy podano nazwe loginu    
                 if (parametryPolecenia == null) {
@@ -241,10 +239,10 @@ public class Serwer implements Runnable {
                 //lub wyswietl od razu, jesli odbiorca ma ustawiona flage
                 try {        
                     if (! klienci.get(otherLogin).autoReceive) {
-                        map = new HashMap<String, String>();
-                        map.put(klientLogin, komunikat);
+                        //zapisz parametry wiadomości do zmiennej pomocniczej
+                        tmpMessage = new Pair<String, String> (klientLogin, komunikat);
                         //Dodaj do kolejki komunikatow czekajacych na odebranie
-                        klienci.get(otherLogin).messageQueue.add(map);
+                        klienci.get(otherLogin).messageQueue.add(tmpMessage);
                     } else {
                         //Nie dodawaj do kolejki, od razu wyswietl
                         klienci.get(otherLogin).asystent.Wyslij(klientLogin + ": "+ komunikat);
@@ -265,11 +263,9 @@ public class Serwer implements Runnable {
                     //oczekujacych wiadomosci 
                     if (! receiver.autoReceive) {
                         //Dodaj do kolejki komunikatow odbiorcy komunikat
-                        //korzystając z pomocniczego słownika z jedną parą 
-                        // < loginNadawcy, wiadomosc >
-                        map = new HashMap<String, String>();
-                        map.put(klientLogin, czesciWiadomosci[1]);
-                        receiver.messageQueue.add(map);
+                        //korzystając z pomocniczej zmiennej
+                        tmpMessage = new Pair<String, String>(klientLogin, czesciWiadomosci[1]);
+                        receiver.messageQueue.add(tmpMessage);
                     } else {
                         //nie dodawaj do kolejki, od razu wyswietl
                         receiver.asystent.Wyslij(klientLogin + ": "+ czesciWiadomosci[1]);
@@ -288,15 +284,14 @@ public class Serwer implements Runnable {
                 }
                 //Pomocnicza lista komunikatów, do której będą dodawane komunikaty przeznaczone do usunięcia
                 //Usunięte zostaną zniorczo, po przejsciu całej pętli foreach 
-                LinkedList <Map<String, String>> tempList = new LinkedList<Map<String, String>>();
-                //Iteruj po komunikatach w postaci 1-elementowego słownika <nadawca, tresc>
-                for (Map<String, String> message: klienci.get(klientLogin).messageQueue){
-                    //sprawdz, czy aktualnie jest przetwarzany dobry komunikat
-                    if (message.containsKey(otherLogin)) {
-                        //jeśli tak, pobierz klucz i wartosc...
-                        //...niestety w dość zawiły sposób
-                        String key = message.keySet().iterator().next();
-                        String value = message.get(key);
+                LinkedList <Pair<String, String>> tempList = new LinkedList<Pair<String, String>>();
+                //Iteruj po komunikatach kolejki
+                for (Pair<String, String> message: klienci.get(klientLogin).messageQueue){
+                    //sprawdz, czy aktualnie jest przetwarzany komunikat od dobrego nadawcy
+                    String key = message.getKey();
+                    if (key.compareTo(otherLogin)==0) {
+                        //jeśli tak, pobierz tekst wiadomości
+                        String value = message.getValue();
                         this.Wyslij(key+ ": " + value );
                         //dodaj do tymczasowej listy te komunikaty, ktore po przejsciu przez petle bedą usunięte
                         tempList.add(message);
@@ -310,12 +305,10 @@ public class Serwer implements Runnable {
             } else if (polecenie.equals("GETALL")) {   
                 //Wyswietl cala kolejke komunikatow, po czym wyczysc kolejke
                 
-                //Pętla iterująca po komunikatach - 1-elementowe slowniki < nadawca, wiadomosc >
-                for (Map<String, String> message: klienci.get(klientLogin).messageQueue) {
-                    //mapa ma tylko jedną parę <klucz, wartość> więc można się bezpiecznie
-                    //odwołać do jej pierwszego elementu
-                    String key = message.keySet().iterator().next();
-                    String value = message.get(key);
+                //Pętla iterująca po komunikatach
+                for (Pair<String, String> message: klienci.get(klientLogin).messageQueue) {
+                    String key = message.getKey();
+                    String value = message.getValue();
                     this.Wyslij(key+ ": " + value );
                 }
                 //na koniec wyczyść kolejke
