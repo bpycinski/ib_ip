@@ -327,7 +327,9 @@ public class Serwer implements Runnable {
                     answer += ";";
                 }
                 //usuń znak ';' konczący wiadomość
-                answer = answer.substring(0, answer.length()-1);
+                if (answer.endsWith(";")) {
+                    answer = answer.substring(0, answer.length()-1);
+                }
                 Wyslij(answer);
             } else if (polecenie.equals("EXIT")) {         
                 //zakoncz, pozamykaj co sie da
